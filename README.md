@@ -36,8 +36,11 @@ For the third point there are at least two options:
 
 An example of the first is implemented in the [print_profile_schema](#print_profile_schema-source) macro. The second can be achieved with the following pattern:
 
-1. Use [print_profile_docs](#print_profile_docs-source) macro to generate the profile as a Markdown table wrapped in a Jinja `docs` macro
-2. Copy the output to a `docs/dbt_profiler/<model>.md` file
+1. Use [print_profile_docs](#print_profile_docs-source) macro to generate the profile as a Markdown table wrapped in a Jinja `docs` macro and write it to a file, for example:
+
+`dbt -q run-operation print_profile_docs --args '{"schema": "<schema>", "relation_name": "'<model>'"}' > docs/dbt_profiler/<model>.md`
+
+(Note the `-q` option which is required for clean output when redirecting to a file.)
 ```
 # docs/dbt_profiler/customer.md
 {% docs dbt_profiler__customer %}
@@ -52,7 +55,7 @@ An example of the first is implemented in the [print_profile_schema](#print_prof
 
 {% enddocs %}
 ```
-3. Include the profile in a model description using the `doc` macro
+2. Include the profile in a model description using the `doc` macro
 ```yml
 version: 2
 
@@ -76,14 +79,13 @@ models:
 One of the advantages of the `doc` approach over the `meta` approach is that it doesn't require changes to the schema.yml except for the `doc` macro call. Once the macro call has been embedded in the schema the actual profiles can be maintained in a dedicated `dbt_profiler/` directory as Markdown files. The profile files can then be automatically updated by a CI process that runs once a week or month as follows:
 
 1. List the models you want to profile (e.g., using `dbt list --output name -m ${node_selection}`)
-2. For each model run `dbt run-operation print_profile_docs --args '{"relation_name": "'${relation_name}'", "schema": "'${schema}'"}'` and store the result in `dbt_profiler/${relation_name}.md`
-  * Note that you need to store the `dbt run-operation print_profile_docs` output in e.g. a variable before piping it to the target file. Piping the output directly to a file (e.g., `dbt run-operation print_profile_docs > ${relation_name}.md`) will result in a situation where the target file is emptied before `dbt run-operation` compiles the dbt project which will throw an error if you're already referring to the `doc` block that the operation has not yet generated. See example [update-relation-profile.sh](update-relation-profile.sh) script.
+2. For each model, run `dbt -q run-operation print_profile_docs --args '{"relation_name": "'${relation_name}'", "schema": "'${schema}'"}' > dbt_profiler/${relation_name}.md`
 
 3. Create a Pull Request for the updated profiles (e.g., using [create-pull-request GitHub Action](https://github.com/peter-evans/create-pull-request))
 
 ## Installation
 
-`dbt-profiler` requires dbt version `>=0.19.2`. Check [dbt Hub](https://hub.getdbt.com/data-mie/dbt_profiler/latest/) for the latest installation instructions. 
+`dbt-profiler` requires dbt version `>=1.1.0`. Check [dbt Hub](https://hub.getdbt.com/data-mie/dbt_profiler/latest/) for the latest installation instructions. 
 
 ## Supported adapters
 
